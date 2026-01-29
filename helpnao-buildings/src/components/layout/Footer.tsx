@@ -11,7 +11,7 @@ export const Footer = () => {
           <div className="space-y-4">
             <Logo />
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Discover premium residential properties across India. Your trusted partner in finding the perfect home.
+              Discover premium residential properties across Bangladesh. Your trusted partner in finding the perfect home.
             </p>
             <div className="flex gap-3">
               {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (

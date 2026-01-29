@@ -49,7 +49,7 @@ export const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Discover exceptional residential properties across India's top cities. 
+            Discover exceptional residential properties across Bangladesh's top cities. 
             Browse, compare, and connect with your dream home.
           </p>
 

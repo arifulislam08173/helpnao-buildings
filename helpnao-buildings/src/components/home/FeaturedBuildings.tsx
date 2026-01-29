@@ -16,7 +16,7 @@ export const FeaturedBuildings = () => {
               Featured Buildings
             </h2>
             <p className="text-muted-foreground max-w-xl">
-              Explore our handpicked selection of premium residential properties across India
+              Explore our handpicked selection of premium residential properties across Bangladesh
             </p>
           </div>
           <Link 
