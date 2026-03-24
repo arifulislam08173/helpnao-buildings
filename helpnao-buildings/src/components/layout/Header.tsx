@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, Heart } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { getShortlist } from '@/lib/shortlist';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const shortlistCount = getShortlist().length;
+  const [shortlistCount, setShortlistCount] = useState(0);
+  const pathname = usePathname() ?? '';
+
+  useEffect(() => {
+    setShortlistCount(getShortlist().length);
+  }, []);
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -15,8 +22,8 @@ export const Header = () => {
   ];
 
   const isActive = (href: string) => {
-    if (href === '/') return location.pathname === '/';
-    return location.pathname.startsWith(href);
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
   };
 
   return (
@@ -25,12 +32,11 @@ export const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Logo />
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map(link => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
-                to={link.href}
+                href={link.href}
                 className={`text-sm font-medium transition-colors ${
                   isActive(link.href)
                     ? 'text-primary'
@@ -43,9 +49,8 @@ export const Header = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Shortlist indicator */}
-            <Link 
-              to="/buildings" 
+            <Link
+              href="/buildings"
               className="relative p-2 rounded-xl hover:bg-muted transition-colors"
               title="View shortlisted items"
             >
@@ -57,7 +62,6 @@ export const Header = () => {
               )}
             </Link>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-xl hover:bg-muted transition-colors"
@@ -68,14 +72,13 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav className="md:hidden py-4 border-t border-border animate-slide-down">
             <div className="flex flex-col gap-2">
-              {navLinks.map(link => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
-                  to={link.href}
+                  href={link.href}
                   onClick={() => setIsMenuOpen(false)}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                     isActive(link.href)

@@ -58,6 +58,16 @@ export interface Building {
   flats: Flat[];
 }
 
+const deterministicNumber = (seed: string): number => {
+  let hash = 0;
+
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+
+  return hash / 4294967295;
+};
+
 const createRooms = (flatId: string, bedrooms: number): Room[] => {
   const rooms: Room[] = [
     {
@@ -131,9 +141,10 @@ const createRooms = (flatId: string, bedrooms: number): Room[] => {
       sqft: i === 1 ? 168 : 120,
       flooring: 'Laminate Wooden Flooring',
       paint: 'Asian Paints - Soft Beige',
-      fittings: i === 1 
-        ? ['Walk-in Wardrobe', 'AC Point', 'Study Table Space', 'Attached Bathroom']
-        : ['Built-in Wardrobe', 'AC Point', 'Study Desk Area'],
+      fittings:
+        i === 1
+          ? ['Walk-in Wardrobe', 'AC Point', 'Study Table Space', 'Attached Bathroom']
+          : ['Built-in Wardrobe', 'AC Point', 'Study Desk Area'],
       windows: 2,
       images: [
         'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
@@ -148,13 +159,13 @@ const createRooms = (flatId: string, bedrooms: number): Room[] => {
 const createFlats = (buildingId: string, totalFloors: number, unitsPerFloor: number): Flat[] => {
   const flats: Flat[] = [];
   const facings: Flat['facing'][] = ['North', 'South', 'East', 'West', 'North-East', 'South-West'];
-  
+
   for (let floor = 1; floor <= Math.min(totalFloors - 1, 5); floor++) {
     for (let unit = 1; unit <= Math.min(unitsPerFloor, 3); unit++) {
       const flatId = `${buildingId}-${floor}${String.fromCharCode(64 + unit)}`;
-      const bedrooms = [2, 3, 3, 4][Math.floor(Math.random() * 4)];
-      const sqft = 800 + (bedrooms * 300) + Math.floor(Math.random() * 200);
-      
+      const bedrooms = [2, 3, 3, 4][Math.floor(deterministicNumber(`${flatId}-bedrooms`) * 4)];
+      const sqft = 800 + bedrooms * 300 + Math.floor(deterministicNumber(`${flatId}-sqft`) * 200);
+
       flats.push({
         id: flatId,
         buildingId,
@@ -165,8 +176,8 @@ const createFlats = (buildingId: string, totalFloors: number, unitsPerFloor: num
         bathrooms: bedrooms,
         balconies: Math.min(bedrooms, 2),
         floorNumber: floor,
-        facing: facings[Math.floor(Math.random() * facings.length)],
-        status: Math.random() > 0.3 ? 'Available' : 'Booked',
+        facing: facings[Math.floor(deterministicNumber(`${flatId}-facing`) * facings.length)],
+        status: deterministicNumber(`${flatId}-status`) > 0.3 ? 'Available' : 'Booked',
         images: [
           { category: 'Living', url: 'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=800' },
           { category: 'Living', url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800' },
@@ -183,7 +194,7 @@ const createFlats = (buildingId: string, totalFloors: number, unitsPerFloor: num
       });
     }
   }
-  
+
   return flats;
 };
 
@@ -439,7 +450,7 @@ export const buildings: Building[] = [
 ];
 
 // Generate flats for each building
-buildings.forEach(building => {
+buildings.forEach((building) => {
   const unitsPerFloor = Math.ceil(building.totalUnits / building.totalFloors);
   building.flats = createFlats(building.id, building.totalFloors, unitsPerFloor);
 });
@@ -494,7 +505,6 @@ export const popularAreas = [
     image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600",
   },
 ];
-
 
 export const facilityLabels: Record<keyof Building['facilities'], string> = {
   lift: 'Lift/Elevator',
