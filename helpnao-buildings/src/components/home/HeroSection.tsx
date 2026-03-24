@@ -1,3 +1,4 @@
+"use client";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Building2, Bed, Square } from 'lucide-react';

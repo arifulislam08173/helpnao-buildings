@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
@@ -21,7 +22,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { buildings, type Room } from '@/data/mockData';
 
 const FlatDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const id = typeof params.id === 'string' ? params.id : '';
   const [isLoading, setIsLoading] = useState(true);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
 

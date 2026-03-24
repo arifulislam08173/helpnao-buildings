@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
@@ -22,7 +23,8 @@ import { buildings, facilityLabels } from '@/data/mockData';
 type TabType = 'flats' | 'facilities' | 'location' | 'about';
 
 const BuildingDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
+  const id = typeof params.id === 'string' ? params.id : '';
   const [activeTab, setActiveTab] = useState<TabType>('flats');
   const [isLoading, setIsLoading] = useState(true);
 

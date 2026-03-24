@@ -1,136 +1,173 @@
 'use client';
 
-import React, { forwardRef, useCallback, useMemo } from 'react';
+import * as React from 'react';
 import NextLink from 'next/link';
-import {
-  useRouter,
-  usePathname,
-  useParams as useNextParams,
-  useSearchParams as useNextSearchParams,
-} from 'next/navigation';
+import { usePathname, useRouter, useParams as useNextParams } from 'next/navigation';
 
 type To = string;
 
-type ClassNameValue =
+type LinkProps = Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
+  to: To;
+  replace?: boolean;
+  state?: unknown;
+};
+
+type NavLinkClassName =
   | string
   | ((state: { isActive: boolean; isPending: boolean }) => string | undefined);
 
-export interface LinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
-  to: To;
-}
+export type NavLinkProps = Omit<LinkProps, 'className'> & {
+  className?: NavLinkClassName;
+};
 
-export interface NavLinkProps extends LinkProps {
-  className?: ClassNameValue;
-}
-
-export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
-  { to, children, ...props },
-  ref,
-) {
+export function Link({ to, children, replace, onClick, ...props }: LinkProps) {
   return (
-    <NextLink href={to} ref={ref} {...props}>
+    <NextLink href={to} replace={replace} onClick={onClick} {...props}>
       {children}
     </NextLink>
   );
-});
+}
 
-export const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(function NavLink(
-  { to, children, className, ...props },
-  ref,
-) {
-  const pathname = usePathname();
-  const isActive = pathname === to;
-  const resolvedClassName = typeof className === 'function'
-    ? className({ isActive, isPending: false })
-    : className;
+export function NavLink({
+  to,
+  children,
+  className,
+  replace,
+  onClick,
+  ...props
+}: NavLinkProps) {
+  const pathname = usePathname() ?? '';
+  const isActive = pathname === to || (to !== '/' && pathname.startsWith(to));
+  const resolvedClassName =
+    typeof className === 'function'
+      ? className({ isActive, isPending: false })
+      : className;
 
   return (
-    <NextLink href={to} ref={ref} className={resolvedClassName} {...props}>
+    <NextLink
+      href={to}
+      replace={replace}
+      onClick={onClick}
+      className={resolvedClassName}
+      {...props}
+    >
       {children}
     </NextLink>
   );
-});
-
-export function useNavigate() {
-  const router = useRouter();
-  return useCallback(
-    (to: string | number) => {
-      if (typeof to === 'number') {
-        if (to < 0) router.back();
-        return;
-      }
-      router.push(to);
-    },
-    [router],
-  );
 }
 
-export function useParams<T extends Record<string, string | string[] | undefined>>() {
-  return useNextParams() as T;
+function getCurrentSearch() {
+  if (typeof window === 'undefined') return '';
+  return window.location.search || '';
 }
 
 export function useLocation() {
-  const pathname = usePathname();
-  const searchParams = useNextSearchParams();
-  const searchString = searchParams?.toString();
+  const pathname = usePathname() ?? '';
+  const [search, setSearch] = React.useState('');
 
-  return useMemo(
-    () => ({
-      pathname,
-      search: searchString ? `?${searchString}` : '',
-      hash: '',
-      state: null,
-      key: `${pathname}${searchString ? `?${searchString}` : ''}`,
-    }),
-    [pathname, searchString],
-  );
+  React.useEffect(() => {
+    setSearch(getCurrentSearch());
+  }, [pathname]);
+
+  return {
+    pathname,
+    search,
+    hash: '',
+    state: null,
+    key: 'default',
+  };
+}
+
+export function useNavigate() {
+  const router = useRouter();
+
+  return (to: string, options?: { replace?: boolean }) => {
+    if (options?.replace) {
+      router.replace(to);
+    } else {
+      router.push(to);
+    }
+  };
+}
+
+export function useParams<
+  T extends Record<string, string | string[] | undefined> = Record<
+    string,
+    string | string[] | undefined
+  >
+>() {
+  return useNextParams() as T;
 }
 
 type SearchParamsInit =
   | string
-  | URLSearchParams
-  | Record<string, string | number | boolean | null | undefined>;
+  | string[][]
+  | Record<string, string | number | boolean | null | undefined>
+  | URLSearchParams;
 
-export function useSearchParams(): [URLSearchParams, (nextInit: SearchParamsInit) => void] {
-  const nextSearchParams = useNextSearchParams();
-  const pathname = usePathname();
+type SetSearchParams =
+  | SearchParamsInit
+  | ((prev: URLSearchParams) => SearchParamsInit);
+
+function toURLSearchParams(init: SearchParamsInit): URLSearchParams {
+  if (init instanceof URLSearchParams) {
+    return new URLSearchParams(init);
+  }
+
+  if (typeof init === 'string') {
+    return new URLSearchParams(init);
+  }
+
+  if (Array.isArray(init)) {
+    return new URLSearchParams(init.map(([key, value]) => [key, String(value)]));
+  }
+
+  const params = new URLSearchParams();
+
+  Object.entries(init).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.set(key, String(value));
+    }
+  });
+
+  return params;
+}
+
+export function useSearchParams(): [
+  URLSearchParams,
+  (nextInit: SetSearchParams, options?: { replace?: boolean }) => void
+] {
+  const pathname = usePathname() ?? '';
   const router = useRouter();
 
-  const searchParams = useMemo(
-    () => new URLSearchParams(nextSearchParams?.toString() || ''),
-    [nextSearchParams],
+  const [searchParams, setSearchParamsState] = React.useState<URLSearchParams>(
+    () => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search)
   );
 
-  const setSearchParams = useCallback(
-    (nextInit: SearchParamsInit) => {
-      const params =
-        typeof nextInit === 'string'
-          ? new URLSearchParams(nextInit)
-          : nextInit instanceof URLSearchParams
-            ? new URLSearchParams(nextInit.toString())
-            : new URLSearchParams(
-                Object.entries(nextInit).flatMap(([key, value]) =>
-                  value === undefined || value === null || value === '' ? [] : [[key, String(value)]],
-                ),
-              );
+  React.useEffect(() => {
+    setSearchParamsState(new URLSearchParams(getCurrentSearch()));
+  }, [pathname]);
 
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
+  const setSearchParams = React.useCallback(
+    (nextInit: SetSearchParams, options?: { replace?: boolean }) => {
+      const newParams =
+        typeof nextInit === 'function'
+          ? toURLSearchParams(nextInit(new URLSearchParams(searchParams)))
+          : toURLSearchParams(nextInit);
+
+      const query = newParams.toString();
+      const url = query ? `${pathname}?${query}` : pathname;
+
+      setSearchParamsState(new URLSearchParams(query));
+
+      if (options?.replace) {
+        router.replace(url);
+      } else {
+        router.push(url);
+      }
     },
-    [pathname, router],
+    [pathname, router, searchParams]
   );
 
   return [searchParams, setSearchParams];
-}
-
-export function BrowserRouter({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
-export function Routes({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
-export function Route(_props: Record<string, unknown>) {
-  return null;
 }
